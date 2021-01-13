@@ -8,12 +8,17 @@ const router = Router()
 router.get('/', async (req, res) => {
     const results = await DB.promise().query(`select * from users`)
     console.log(results)
-    res.send(200)
+    res.sendStatus(200)
 })
 
 router.post(
-    '/',
-    check('username').notEmpty().withMessage('Username cannot be empty'),
+    '/register',
+    check('username')
+        .isEmail()
+        .notEmpty()
+        .withMessage('Username cannot be empty')
+        .isLength({ min: 4 })
+        .withMessage('username should be at least 4 characters'),
     check('password').notEmpty().withMessage('password cannot be empty'),
     (req, res) => {
         const errors = validationResult(req)
@@ -26,7 +31,6 @@ router.post(
 
         if (username && password) {
             try {
-                const userData = { username, password }
                 DB.promise().execute(
                     `INSERT INTO users(username, password) VALUES(?, ?)`,
                     [username, password],
@@ -41,5 +45,28 @@ router.post(
         }
     }
 )
+
+router.post('/login', (req, res) => {
+    console.log(req.sessionID)
+    const { username, password } = req.body
+    if (username && password) {
+        if (req.session.authenticated) {
+            res.json(req.session)
+        } else {
+            if (password === password) {
+                req.session.authenticated = true
+                req.session.user = {
+                    username,
+                    password,
+                }
+                res.json(req.session)
+            } else {
+                res.status(403).json({ msg: 'bad credentials' })
+            }
+        }
+    } else {
+        res.status(403).json({ msg: 'bad credentials' })
+    }
+})
 
 module.exports = router
