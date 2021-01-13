@@ -1,6 +1,9 @@
 const { Router } = require('express')
 const DB = require('../config.js')
 
+const bcrypt = require('bcrypt')
+const saltRounds = 10
+
 const { check, validationResult } = require('express-validator')
 
 const router = Router()
@@ -31,17 +34,18 @@ router.post(
 
         if (username && password) {
             try {
-                DB.promise().execute(
-                    `INSERT INTO users(username, password) VALUES(?, ?)`,
-                    [username, password],
-                    (err, res) => {
-                        if (err) throw err
-                    }
-                )
+                bcrypt.hash(password, saltRounds, function (err, hash) {
+                    DB.promise().execute(
+                        `INSERT INTO users(username, password) VALUES(?, ?)`,
+                        [username, hash],
+                        (err, res) => {
+                            if (err) throw err
+                        }
+                    )
+                })
+
                 res.status(201).send({ msg: 'created user' })
-            } catch (error) {
-                console.log(err)
-            }
+            } catch (error) {}
         }
     }
 )
