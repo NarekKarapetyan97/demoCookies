@@ -3,7 +3,6 @@ const passport = require('passport')
 const DB = require('../config.js')
 const bcrypt = require('bcrypt')
 const { use } = require('../routes/user.js')
-const saltRounds = 10
 
 passport.serializeUser((user, done) => {
     done(null, user.username)
