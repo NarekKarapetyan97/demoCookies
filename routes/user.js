@@ -30,7 +30,6 @@ router.post(
         }
 
         const { username, password } = req.body
-        console.log(req.body)
 
         if (username && password) {
             try {
