@@ -9,9 +9,12 @@ const { check, validationResult } = require('express-validator')
 const router = Router()
 
 router.get('/', async (req, res) => {
-    const results = await DB.promise().query(`select * from users`)
-    console.log(results)
-    res.sendStatus(200)
+    if (req.user) {
+        const results = await DB.promise().query(`select * from users`)
+        res.sendStatus(200).send(results[0])
+    } else {
+        res.status(403).send({ msg: 'not authenticated' })
+    }
 })
 
 router.post(
@@ -34,10 +37,11 @@ router.post(
 
         if (username && password) {
             try {
-                bcrypt.hash(password, saltRounds, function (err, hash) {
+                const saltRounded = bcrypt.genSaltSync(saltRounds)
+                bcrypt.hash(password, saltRounded, function (err, hash) {
                     DB.promise().execute(
-                        `INSERT INTO users(username, password) VALUES(?, ?)`,
-                        [username, hash],
+                        `INSERT INTO users(username, password, salt) VALUES(?, ?, ?)`,
+                        [username, hash, saltRounded],
                         (err, res) => {
                             if (err) throw err
                         }
@@ -49,28 +53,5 @@ router.post(
         }
     }
 )
-
-router.post('/login', (req, res) => {
-    console.log(req.sessionID)
-    const { username, password } = req.body
-    if (username && password) {
-        if (req.session.authenticated) {
-            res.json(req.session)
-        } else {
-            if (password === password) {
-                req.session.authenticated = true
-                req.session.user = {
-                    username,
-                    password,
-                }
-                res.json(req.session)
-            } else {
-                res.status(403).json({ msg: 'bad credentials' })
-            }
-        }
-    } else {
-        res.status(403).json({ msg: 'bad credentials' })
-    }
-})
 
 module.exports = router
