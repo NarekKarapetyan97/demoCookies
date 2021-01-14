@@ -8,6 +8,7 @@ rout.post(
 
     passport.authenticate('local'),
     (req, res) => {
+        console.log(req.user)
         res.sendStatus(200)
     }
 )
